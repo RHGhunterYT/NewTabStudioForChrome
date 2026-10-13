@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spotify controller host</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; }
+  #player { width: 100%; height: 100%; }
+  #player iframe { width: 100% !important; height: 100% !important; border: 0; border-radius: 12px; }
+  #status {
+    display: none; position: fixed; left: 6px; bottom: 6px; right: 6px;
+    font: 11px/1.4 monospace; color: #ffd28a; background: rgba(0,0,0,.8);
+    padding: 5px 8px; border-radius: 6px; z-index: 99; white-space: pre-wrap;
+  }
+  #status.ok { color: #9be89b; }
+</style>
+</head>
+<body>
+<div id="player"></div>
+<div id="status"></div>
+<script>
+  let API = null, controller = null, pendingUri = null;
+  const standalone = window === window.parent;
+  const statusEl = document.getElementById('status');
+
+  function note(t, ok) {
+    console.log('[spotify-sandbox] ' + t);
+    statusEl.textContent = t;
+    statusEl.className = ok ? 'ok' : '';
+    statusEl.style.display = (standalone || !ok) ? 'block' : 'none';
+  }
+
+  const send = (event, data) => {
+    try { parent.postMessage(Object.assign({ type: 'nts_spotify_host', event }, data || {}), '*'); } catch (e) {}
+  };
+
+  window.addEventListener('message', e => {
+    const m = e.data;
+    if (!m || m.type !== 'nts_spotify') return;
+    try {
+      if (m.action === 'load') {
+        if (pendingUri === m.uri && controller) { send('ready'); return; }
+        pendingUri = m.uri;
+        if (!pendingUri) { note('No valid Spotify URI received — is the widget link a track/playlist/album?', false); return; }
+        if (API) createController();
+      } else if (controller) {
+        if (m.action === 'setVolume') controller.setVolume(m.value);
+        else if (m.action === 'play') controller.resume();
+        else if (m.action === 'pause') controller.pause();
+        else if (m.action === 'toggle') controller.togglePlay();
+        else if (m.action === 'seek') controller.seek(m.value);
+      }
+    } catch (err) { note('Error: ' + err, false); send('error', { message: String(err) }); }
+  });
+
+  function createController() {
+    if (!API || !pendingUri) return;
+    try {
+      if (controller) { try { controller.destroy(); } catch (e) {} controller = null; }
+      const host = document.getElementById('player');
+      host.textContent = '';
+      note('Creating player for ' + pendingUri + '…', true);
+      API.createController(host, { uri: pendingUri, width: '100%', height: '100%' }, (ctrl, error) => {
+        if (error || !ctrl) {
+          const msg = String(error || 'Spotify rejected the link');
+          note(msg, false);
+          send('error', { message: msg });
+          return;
+        }
+        controller = ctrl;
+        try {
+          controller.addEventListener('ready', () => { note('Player ready — volume control active', true); send('ready'); });
+          controller.addEventListener('playback_update', ev => send('playback_update', { data: ev && ev.data }));
+        } catch (e) {}
+        send('ready');
+      });
+    } catch (err) { note('Exception: ' + err, false); send('error', { message: String(err) }); }
+  }
+
+  window.onSpotifyIframeApiReady = api => {
+    API = api;
+    note('Spotify IFrame API loaded', true);
+    send('api_ready');
+    createController();
+  };
+
+  note('Loading Spotify IFrame API…', true);
+  const s = document.createElement('script');
+  s.src = 'https://open.spotify.com/embed/iframe-api/v1';
+  s.async = true;
+  s.onerror = () => {
+    note('FAILED to load the Spotify API script — manifest.json is missing the sandbox CSP (step 1), or you are offline', false);
+    send('api_error', { message: 'iframe-api script blocked/failed (check manifest CSP)' });
+  };
+  document.head.append(s);
+  setTimeout(() => { if (!API) { note('API script loaded but never initialized', false); send('api_error', { message: 'iframe-api never initialized' }); } }, 8000);
+</script>
+</body>
+</html>

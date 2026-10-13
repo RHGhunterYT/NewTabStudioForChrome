@@ -1,0 +1,38 @@
+{
+    "manifest_version": 3,
+    "name": "New Tab Studio",
+    "version": "1.0.0",
+    "description": "Fully customizable new tab: backgrounds, soundtrack, Spotify volume control, launchpad, weather, countdown, and draggable/resizable widgets.",
+    "chrome_url_overrides": {
+        "newtab": "newtab.html"
+    },
+    "permissions": [
+        "storage"
+    ],
+    "host_permissions": [
+        "https://api.open-meteo.com/*",
+        "https://geocoding-api.open-meteo.com/*"
+    ],
+    "sandbox": {
+        "pages": [
+            "spotify-sandbox.html"
+        ]
+    },
+    "content_security_policy": {
+        "sandbox": "sandbox allow-scripts allow-forms allow-popups; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://open.spotify.com; object-src 'self'; frame-src https://open.spotify.com https://*.spotify.com; connect-src 'self' https://open.spotify.com https://*.spotify.com https://*.scdn.co https://*.spotifycdn.com; img-src 'self' https: data: blob:;"
+    },
+    "icons": {
+        "16": "images/icon16.png",
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "images/icon16.png",
+            "32": "images/icon32.png",
+            "48": "images/icon48.png",
+            "128": "images/icon128.png"
+        }
+    }
+}
