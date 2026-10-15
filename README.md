@@ -12,3 +12,23 @@
 3. Unzip the file
 4. Go to the chrome extensions page and click on load unpacked at the top left
 5. Your ready to go!
+
+## Widgets
+1. Clock
+2. Date
+3. Greeting
+4. Search bar
+5. Quick links
+6. Launchpad
+7. Notes
+8. To-do list
+9. Quote
+10. Spotify Player
+11. Soundtrack player
+12. Weather
+13. Countdown
+
+## Features
+1. Movable widgets
+2. Customizable widgets
+3. Changable background
